@@ -1,4 +1,6 @@
+#include <iostream>
 #include "Utils.h"
+
 
 namespace HsEngine
 {
@@ -6,5 +8,10 @@ namespace HsEngine
 	std::size_t ArrayLength (const T (&array)[N])
 	{
 		return N;
+	}
+
+	void PutLog (const std::string& logText)
+	{
+		std::cout << logText << std::endl;
 	}
 }

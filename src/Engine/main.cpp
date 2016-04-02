@@ -91,6 +91,8 @@ int main (int argc, char* args[])
 #endif
 		// シーン管理クラスとかでフレーム更新叩く
 		sceneMgr->OnUpdate (deltaTime);
+		sceneMgr->OnDraw ();
+		sceneMgr->OnEndOfFrame ();
 	}
 
 #ifdef DEBUG

@@ -7,30 +7,54 @@
 class HsEngine::SceneManager::SceneManagementParam
 {
 public:
+	SceneManagementParam () {}
+	~SceneManagementParam () {}
+	const int GetSceneId () { return sceneId; }
+	bool IsNext () { return moveType == SceneMoveType::Next; }
+	bool IsReplace () { return moveType == SceneMoveType::Replace; }
+	bool IsReturn () { return moveType == SceneMoveType::Return; }
+	bool IsReturnToRoot () { return moveType == SceneMoveType::ReturnToRoot; }
 
+	void SetNextScene (int nextSceneId)
+	{
+		sceneId = nextSceneId;
+		moveType = SceneMoveType::Next;
+	}
+
+	void SetReplaceScene (int nextSceneId)
+	{
+		sceneId = nextSceneId;
+		moveType = SceneMoveType::Replace;
+	}
+
+	void SetReturnScene ()
+	{
+		sceneId = -1;
+		moveType = SceneMoveType::Return;
+	}
+
+	void SetReturnToRootScene ()
+	{
+		sceneId = -1;
+		moveType = SceneMoveType::ReturnToRoot;
+	}
+
+private:
 	// シーンの遷移タイプ
 	enum SceneMoveType
 	{
 		Next,
-		CallSub,
 		Replace,
 		Return,
 		ReturnToRoot
 	};
 
-	SceneManagementParam ()
-	{
-	}
-
-	~SceneManagementParam ()
-	{
-	}
+	SceneMoveType moveType;
+	int sceneId;
 };
 
 namespace HsEngine
 {
-	const char MAX_SCENE_STACK = 5;
-
 	SceneManager* SceneManager::instance;
 
 	void SceneManager::Initialize ()
@@ -51,6 +75,27 @@ namespace HsEngine
 
 	void SceneManager::OnUpdate (const uint deltaTime)
 	{
+		Scene* scene = rootScene;
+		while (scene != nullptr)
+		{
+			scene->ProcessUpdate (deltaTime, (scene->GetChild () != nullptr));
+			scene = scene->GetChild ();
+		}
+	}
+
+	void SceneManager::OnDraw ()
+	{
+		Scene* scene = rootScene;
+		while (scene != nullptr)
+		{
+			scene->ProcessDraw ((scene->GetChild () != nullptr));
+			scene = scene->GetChild ();
+		}
+	}
+
+	void SceneManager::OnEndOfFrame ()
+	{
+		ExecuteSceneManagement ();
 	}
 
 	void SceneManager::OnGameExit ()
@@ -59,25 +104,126 @@ namespace HsEngine
 
 	void SceneManager::ReserveNextScene (const int sceneId)
 	{
+		sceneMngParam = new SceneManagementParam ();
+		sceneMngParam->SetNextScene (sceneId);
+	}
+
+	void SceneManager::ReserveReplaceScene (const int sceneId)
+	{
+		sceneMngParam = new SceneManagementParam ();
+		sceneMngParam->SetReplaceScene (sceneId);
+	}
+
+	void SceneManager::ReserveReturnScene ()
+	{
+		sceneMngParam = new SceneManagementParam ();
+		sceneMngParam->SetReturnScene ();
+	}
+
+	void SceneManager::ReserveReturnToRootScene ()
+	{
+		sceneMngParam = new SceneManagementParam ();
+		sceneMngParam->SetReturnToRootScene ();
 	}
 
 	SceneManager::SceneManager ()
-		: sceneStack (std::vector<Scene*> ()),
-			sceneMngParam (new SceneManager::SceneManagementParam ())
+		: sceneMngParam (nullptr), rootScene (nullptr), currentScene (nullptr)
 	{
-		sceneStack.reserve(MAX_SCENE_STACK);
 	}
 
 	SceneManager::~SceneManager ()
 	{
-		int sceneLen = sceneStack.size ();
-		for (int i = sceneLen - 1; i > -1; --i)
+#ifdef DEBUG
+		const std::string logText = "called SceneManager Destruct.";
+		PutLog (logText);
+#endif
+		// rootSceneのデストラクタで子は再帰で破棄
+		delete rootScene;
+		rootScene = nullptr;
+
+		// ↑のwhileで最下層のchildまでdeleteするのでcurrentSceneは既に破棄済み
+		currentScene = nullptr;
+
+		delete sceneMngParam;
+		sceneMngParam = nullptr;
+	}
+
+	void SceneManager::ExecuteSceneManagement ()
+	{
+		if (sceneMngParam == nullptr)
 		{
-			delete sceneStack[i];
-			sceneStack[i] = nullptr;
+			return;
 		}
-		sceneStack.clear();
-		sceneStack.shrink_to_fit ();
+
+		Scene* scene;
+		if (sceneMngParam->IsNext ())
+		{
+			// TODO create new scene
+			// currentScene = new scene
+			// currentScene->ProcessInitialize ();
+			// currentScene->ProcessBegin ();
+			scene = rootScene;
+			while (scene != nullptr
+				&& scene->GetChild () != nullptr)
+			{
+				scene = scene->GetChild ();
+			}
+
+			scene->SetChild (currentScene);
+		}
+		else if (sceneMngParam->IsReplace ())
+		{
+			scene = rootScene->GetChild ();
+			while (scene != nullptr
+				&& scene->GetChild () != currentScene)
+			{
+				scene = scene->GetChild ();
+			}
+
+			if (scene != nullptr)
+			{
+				delete currentScene;
+				currentScene = nullptr;
+
+				// TODO create new scene
+				// currentScene = new scene
+				// currentScene->ProcessInitialize ();
+				// currentScene->ProcessBegin ();
+				scene->SetChild (currentScene);
+			}
+		}
+		else if (sceneMngParam->IsReturn ())
+		{
+			if (rootScene != currentScene)
+			{
+				scene = rootScene->GetChild ();
+
+				// 子のポインタがcurrentSceneのポインタと一致するまで
+				while (scene != nullptr
+					&& scene != currentScene)
+				{
+					scene = scene->GetChild ();
+					if (scene == nullptr)
+					{
+						break;
+					}
+				}
+
+				if (scene != nullptr)
+				{
+					scene->DestroyChild ();
+					currentScene = scene;
+					scene->ProcessBegin ();
+				}
+			}
+		}
+		else if (sceneMngParam->IsReturnToRoot ())
+		{
+			scene = rootScene->GetChild ();
+			delete scene;					// 子に関してはデストラクタで再帰
+			rootScene->ProcessBegin ();
+			currentScene = rootScene;
+		}
 
 		delete sceneMngParam;
 		sceneMngParam = nullptr;

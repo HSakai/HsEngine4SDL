@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include <vector>
 #include "Utils.h"
 
 namespace HsEngine
@@ -16,17 +15,25 @@ namespace HsEngine
 		static void Destroy ();
 		static SceneManager* GetInstance ();
 		void OnUpdate (const uint deltaTime);
+		void OnDraw ();
+		void OnEndOfFrame ();
 		void OnGameExit ();
 		void ReserveNextScene (const int sceneId);
-		void ReserveAddSubScene (const int sceneId);
 		void ReserveReplaceScene (const int sceneId);
 		void ReserveReturnScene ();
+		void ReserveReturnToRootScene ();
 	private:
 		SceneManager ();
 		~SceneManager ();
 		static SceneManager* instance;
 		class SceneManagementParam;
-		std::vector<Scene*> sceneStack;
 		SceneManagementParam* sceneMngParam;
+		Scene* rootScene;
+		Scene* currentScene;
+
+		/*
+		 * 予約されたシーンIDに紐づく遷移管理処理
+		 */
+		void ExecuteSceneManagement ();
 	};
 }
