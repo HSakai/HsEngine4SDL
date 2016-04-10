@@ -4,7 +4,7 @@ INCLUDE = -I/usr/local/include/SDL2 -I./src/Engine/include
 
 CC = g++
 CXXFLAGS = -g -std=c++11 -Wall
-LIB = -lSDL2
+LIB = -L /usr/local/lib -lSDL2
 SRCS = $(shell find ./src -type f -name *.cpp)
 OBJS = $(SRCS:%.cpp=%.o)
 OSXFW = -framework OpenGL
