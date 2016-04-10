@@ -3,6 +3,7 @@
  */
 #include "SceneManager.h"
 #include "Scene.h"
+#include "SceneFactory.h"
 
 class HsEngine::SceneManager::SceneManagementParam
 {
@@ -11,6 +12,7 @@ public:
 	~SceneManagementParam () {}
 	const int GetSceneId () { return sceneId; }
 	bool IsNext () { return moveType == SceneMoveType::Next; }
+	bool IsAdd () { return moveType == SceneMoveType::Add; }
 	bool IsReplace () { return moveType == SceneMoveType::Replace; }
 	bool IsReturn () { return moveType == SceneMoveType::Return; }
 	bool IsReturnToRoot () { return moveType == SceneMoveType::ReturnToRoot; }
@@ -19,6 +21,12 @@ public:
 	{
 		sceneId = nextSceneId;
 		moveType = SceneMoveType::Next;
+	}
+
+	void SetAddScene (int nextSceneId)
+	{
+		sceneId = nextSceneId;
+		moveType = SceneMoveType::Add;
 	}
 
 	void SetReplaceScene (int nextSceneId)
@@ -44,6 +52,7 @@ private:
 	enum SceneMoveType
 	{
 		Next,
+		Add,
 		Replace,
 		Return,
 		ReturnToRoot
@@ -108,6 +117,12 @@ namespace HsEngine
 		sceneMngParam->SetNextScene (sceneId);
 	}
 
+	void SceneManager::ReserveAddScene (const int sceneId)
+	{
+		sceneMngParam = new SceneManagementParam ();
+		sceneMngParam->SetAddScene (sceneId);
+	}
+
 	void SceneManager::ReserveReplaceScene (const int sceneId)
 	{
 		sceneMngParam = new SceneManagementParam ();
@@ -158,10 +173,25 @@ namespace HsEngine
 		Scene* scene;
 		if (sceneMngParam->IsNext ())
 		{
-			// TODO create new scene
-			// currentScene = new scene
-			// currentScene->ProcessInitialize ();
-			// currentScene->ProcessBegin ();
+			delete rootScene;
+			rootScene = nullptr;
+
+			currentScene = SceneFactory::CreateScene (sceneMngParam->GetSceneId ());
+
+			if (currentScene != nullptr)
+			{
+				currentScene->ProcessInitialize ();
+				currentScene->ProcessBegin ();
+			}
+			
+			rootScene = currentScene;
+		}
+		else if (sceneMngParam->IsAdd ())
+		{
+			currentScene = SceneFactory::CreateScene (sceneMngParam->GetSceneId ());
+			currentScene->ProcessInitialize ();
+			currentScene->ProcessBegin ();
+
 			scene = rootScene;
 			while (scene != nullptr
 				&& scene->GetChild () != nullptr)
@@ -185,10 +215,9 @@ namespace HsEngine
 				delete currentScene;
 				currentScene = nullptr;
 
-				// TODO create new scene
-				// currentScene = new scene
-				// currentScene->ProcessInitialize ();
-				// currentScene->ProcessBegin ();
+				currentScene = SceneFactory::CreateScene (sceneMngParam->GetSceneId ());
+				currentScene->ProcessInitialize ();
+				currentScene->ProcessBegin ();
 				scene->SetChild (currentScene);
 			}
 		}

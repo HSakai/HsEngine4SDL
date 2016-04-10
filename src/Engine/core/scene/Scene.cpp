@@ -7,7 +7,7 @@
 
 namespace HsEngine
 {
-	Scene::Scene ()
+	Scene::Scene () : childScene (nullptr)
 	{
 	}
 

@@ -4,6 +4,7 @@
  */
 #include <iostream>
 #include <SDL.h>
+#include <SDL_opengl.h>
 #include "Config.h"
 #include "SceneManager.h"
 
@@ -44,6 +45,16 @@ bool PollSDLEvent (SDL_Event* event, SDL_Keycode& inputKey)
 	return true;
 }
 
+/*
+ * OpenGLの基本設定
+ */
+void SetupGraphic ()
+{
+	glViewport (0, 0, HsEngine::WINDOW_WIDTH, HsEngine::WINDOW_HEIGHT);
+	glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
+	glEnable (GL_DEPTH_TEST);
+}
+
 int main (int argc, char* args[])
 {
 	//SDLシステムを初期化します。
@@ -54,6 +65,9 @@ int main (int argc, char* args[])
 		return 1;
 	}
 
+	// ダブルバッファリング設定
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
 	//ウインドウ作成、設定、表示
 	SDL_Window *window = SDL_CreateWindow (
 		HsEngine::GAME_TITLE,
@@ -63,6 +77,20 @@ int main (int argc, char* args[])
 		HsEngine::WINDOW_HEIGHT,
 		SDL_WINDOW_OPENGL);
 
+	if (!window)
+	{
+		std::cout << "初期化失敗: window作成" << std::endl;
+		return 1;
+	}
+
+	SDL_GLContext context;
+	context = SDL_GL_CreateContext(window);
+	if (!context)
+	{
+		std::cout << "初期化失敗: window作成" << std::endl;
+		return 1;
+	}
+
 	// シーン管理クラス初期化
 	HsEngine::SceneManager::Initialize ();
 	HsEngine::SceneManager* sceneMgr = HsEngine::SceneManager::GetInstance ();
@@ -70,6 +98,8 @@ int main (int argc, char* args[])
 #ifdef DEBUG
 	HsEngine::Debug* debug = new HsEngine::Debug ();
 #endif
+
+	sceneMgr->ReserveNextScene (HsEngine::SceneManager::ROOT_SCENE_ID);
 
 	unsigned int lastTime = SDL_GetTicks (), currentTime, deltaTime;
 	SDL_Event event;
@@ -92,6 +122,8 @@ int main (int argc, char* args[])
 		// シーン管理クラスとかでフレーム更新叩く
 		sceneMgr->OnUpdate (deltaTime);
 		sceneMgr->OnDraw ();
+		SDL_GL_SwapWindow (window);
+
 		sceneMgr->OnEndOfFrame ();
 	}
 

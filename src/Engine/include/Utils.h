@@ -11,5 +11,8 @@ namespace HsEngine
 	template <typename T, std::size_t N>
 	std::size_t ArrayLength (const T (&array)[N]);
 
+#ifdef DEBUG
+	// coutでコンソール出力
 	void PutLog (const std::string& logText);
+#endif
 }

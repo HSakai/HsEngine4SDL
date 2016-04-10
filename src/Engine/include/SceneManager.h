@@ -14,11 +14,13 @@ namespace HsEngine
 		static void Initialize ();
 		static void Destroy ();
 		static SceneManager* GetInstance ();
+		static const int ROOT_SCENE_ID = 0;
 		void OnUpdate (const uint deltaTime);
 		void OnDraw ();
 		void OnEndOfFrame ();
 		void OnGameExit ();
 		void ReserveNextScene (const int sceneId);
+		void ReserveAddScene (const int sceneId);
 		void ReserveReplaceScene (const int sceneId);
 		void ReserveReturnScene ();
 		void ReserveReturnToRootScene ();

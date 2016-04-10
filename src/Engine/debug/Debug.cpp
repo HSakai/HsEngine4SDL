@@ -22,7 +22,7 @@ namespace HsEngine
 			prevFps = fps;
 			fps = 0;
 			lastTime = time;
-			std::cout << "[Fps::" << prevFps << "]" << std::endl;
+			std::cout << "[Secound Fps::" << prevFps << "]" << std::endl;
 		}
 
 		const short CurrentFps () const
